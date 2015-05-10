@@ -25,12 +25,13 @@ namespace n1ar.Service.Core.Evaluators {
         public string Evaluate(string expression) {
             char[] tokens = expression.ToCharArray();
             string output = "";
-            foreach (var token in tokens) {
+            for (int i = 0; i < tokens.Length; i++) {
+                var token = tokens[i];
                 switch (GetTokenType(token)) {
                     case TokenType.Invalid:
                         throw new ArgumentException("Invalid character found.");
                     case TokenType.Number:
-                        output += token + " ";
+                        output = AppendConsecutiveNumberToOutput(output, token, i > 0 ? tokens[i - 1] : (char?)null);
                         break;
                     case TokenType.Function:
                         operatorsStack.Push(token);
@@ -82,6 +83,23 @@ namespace n1ar.Service.Core.Evaluators {
 
             operatorsStack.Clear();
 
+            return output;
+        }
+
+        private string AppendConsecutiveNumberToOutput(string output, char token, char? previousToken ) {
+            Regex numberMatcher = rxList[0].Regex;
+            // If there is at least a 2-char outputted value and
+            // if the last output was a number
+            // (thus checking the last concatenated string and discard the appended whitespace)
+            // and previous checked token was a number too
+            // then format the output discarding the whitespace
+            if (previousToken.HasValue && numberMatcher.IsMatch(previousToken.Value.ToString()) &&
+                output.Length >= 2 && numberMatcher.IsMatch(output.Substring(output.Length - 2, 1))) {
+                output = output.TrimEnd(' ');
+            }
+            // Join the last number
+            output += token + " ";
+            
             return output;
         }
 
